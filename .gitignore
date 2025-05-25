@@ -1,0 +1,30 @@
+# 가상환경
+venv/
+env/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 데이터 파일
+data/raw/
+*.csv
+*.json
+*.xlsx
+
+# API 키 및 설정
+config/api_keys.py
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

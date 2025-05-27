@@ -10,6 +10,8 @@
 📋 자동 보고서 생성: 한국어/영어 분석 보고서
 
 프로젝트 구조
+
+```
 meme_lifecycle_analysis/
 ├── data/
 │ ├── raw/ # 원본 데이터
@@ -25,27 +27,36 @@ meme_lifecycle_analysis/
 ├── config/ # 설정 파일
 ├── notebooks/ # Jupyter 노트북
 └── tests/ # 테스트 코드
+```
+
 설치 방법
 
+```
 1. 저장소 클론
    bashgit clone [your-repository-url]
    cd meme_lifecycle_analysis
 2. 가상환경 설정
    bashpython3.12 -m venv venv
    source venv/bin/activate # Mac/Linux
+```
 
 # 또는
 
+```
 venv\Scripts\activate # Windows 3. 의존성 설치
 bashpip install -r requirements.txt 4. API 키 설정
 config/api_keys_template.py를 config/api_keys.py로 복사하고 실제 API 키 입력:
 python# Twitter API
 TWITTER_BEARER_TOKEN = "your_bearer_token"
+```
 
 # Reddit API
 
+```
 REDDIT_CLIENT_ID = "your_client_id"
 REDDIT_CLIENT_SECRET = "your_client_secret"
+```
+
 사용 방법
 
 1. 데이터 수집
@@ -82,11 +93,13 @@ Instagram: 매우 제한적, 신중히 사용
 
 기여 방법
 
+```
 Fork the repository
 Create your feature branch (git checkout -b feature/AmazingFeature)
 Commit your changes (git commit -m 'Add some AmazingFeature')
 Push to the branch (git push origin feature/AmazingFeature)
 Open a Pull Request
+```
 
 라이선스
 이 프로젝트는 MIT 라이선스를 따릅니다.

@@ -1,0 +1,6 @@
+total_posts: 421
+date_range: 2015-11-28 07:50:16 ~ 2025-05-27 09:35:19
+unique_authors: 397
+unique_subreddits: 188
+avg_score: 2614.7173396674584
+avg_comments: 130.3895486935867

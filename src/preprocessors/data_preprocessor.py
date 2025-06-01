@@ -4,6 +4,9 @@ from datetime import datetime
 import re
 import os
 import sys
+import glob
+import argparse
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from config.config import RAW_DATA_DIR, PROCESSED_DATA_DIR
@@ -121,22 +124,80 @@ class DataPreprocessor:
         
         return df
 
-# 실행 코드
-if __name__ == "__main__":
+def find_latest_reddit_file(meme_name=None):
+    """가장 최근 Reddit 데이터 파일 찾기"""
+    if meme_name:
+        # 특정 밈의 파일 찾기
+        meme_safe_name = meme_name.replace(' ', '_').lower()
+        pattern = f"reddit_{meme_safe_name}_*.csv"
+    else:
+        # 모든 Reddit 파일 찾기
+        pattern = "reddit_*_*.csv"
+    
+    reddit_files = glob.glob(os.path.join(RAW_DATA_DIR, pattern))
+    
+    if reddit_files:
+        # 가장 최근 파일 반환
+        latest_file = max(reddit_files, key=os.path.getctime)
+        return latest_file
+    else:
+        return None
+
+def extract_meme_name_from_filename(filename):
+    """파일명에서 밈 이름 추출"""
+    basename = os.path.basename(filename)
+    # reddit_meme_name_timestamp.csv 형식
+    parts = basename.replace('reddit_', '').replace('.csv', '').split('_')
+    
+    # 타임스탬프 부분 제거 (마지막 2개 요소: YYYYMMDD, HHMMSS)
+    if len(parts) >= 2:
+        # 마지막 2개가 숫자인지 확인 (타임스탬프)
+        if parts[-1].isdigit() and parts[-2].isdigit() and len(parts[-2]) == 8:
+            meme_parts = parts[:-2]
+        else:
+            meme_parts = parts
+    else:
+        meme_parts = parts
+    
+    return '_'.join(meme_parts)
+
+def main():
+    """메인 실행 함수"""
+    parser = argparse.ArgumentParser(description='Reddit 데이터 전처리')
+    parser.add_argument('--meme', type=str, help='처리할 밈 이름')
+    parser.add_argument('--file', type=str, help='처리할 특정 파일명')
+    
+    args = parser.parse_args()
+    
     # 전처리기 생성
     preprocessor = DataPreprocessor()
     
-    # 가장 최근 Reddit 데이터 파일 찾기
-    import glob
-    reddit_files = glob.glob(os.path.join(RAW_DATA_DIR, 'reddit_chill_guy_*.csv'))
-    
-    if reddit_files:
-        # 가장 최근 파일 선택
-        latest_file = max(reddit_files, key=os.path.getctime)
+    # 처리할 파일 찾기
+    if args.file:
+        # 특정 파일 지정
+        target_file = os.path.join(RAW_DATA_DIR, args.file)
+        if not os.path.exists(target_file):
+            print(f"파일을 찾을 수 없습니다: {args.file}")
+            return
+        filename = args.file
+        meme_name = extract_meme_name_from_filename(filename)
+    else:
+        # 가장 최근 파일 또는 특정 밈의 파일 찾기
+        latest_file = find_latest_reddit_file(args.meme)
+        if not latest_file:
+            if args.meme:
+                print(f"'{args.meme}' 밈의 Reddit 데이터 파일을 찾을 수 없습니다.")
+            else:
+                print("Reddit 데이터 파일을 찾을 수 없습니다.")
+            return
+        
         filename = os.path.basename(latest_file)
-        
-        print(f"처리할 파일: {filename}")
-        
+        meme_name = extract_meme_name_from_filename(filename)
+    
+    print(f"처리할 파일: {filename}")
+    print(f"밈 이름: {meme_name}")
+    
+    try:
         # 데이터 로드 및 전처리
         df = preprocessor.load_reddit_data(filename)
         df_processed = preprocessor.preprocess_reddit(df)
@@ -147,5 +208,14 @@ if __name__ == "__main__":
         # 저장
         output_filename = filename.replace('reddit_', 'processed_reddit_')
         preprocessor.save_processed_data(df_processed, output_filename)
-    else:
-        print("Reddit 데이터 파일을 찾을 수 없습니다.")
+        
+        print(f"\n✅ '{meme_name}' 밈 데이터 전처리 완료!")
+        
+    except Exception as e:
+        print(f"❌ 전처리 중 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+
+# 실행 코드
+if __name__ == "__main__":
+    main()

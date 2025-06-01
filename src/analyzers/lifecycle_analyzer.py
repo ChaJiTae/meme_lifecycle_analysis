@@ -5,10 +5,13 @@ from scipy.optimize import curve_fit
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import warnings
-warnings.filterwarnings('ignore')
-
 import os
 import sys
+import glob
+import argparse
+
+warnings.filterwarnings('ignore')
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from config.config import PROCESSED_DATA_DIR, RESULTS_DIR
@@ -199,13 +202,15 @@ class LifecycleAnalyzer:
     
     def generate_report(self, meme_name, df, daily_metrics, phases, curve_fit, metrics):
         """분석 보고서 생성"""
-        report_path = os.path.join(self.results_dir, 'reports', f'{meme_name}_lifecycle_report.txt')
-        os.makedirs(os.path.dirname(report_path), exist_ok=True)
+        reports_dir = os.path.join(self.results_dir, 'reports')
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        report_path = os.path.join(reports_dir, f'{meme_name}_lifecycle_report.txt')
         
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write(f"MEME LIFECYCLE ANALYSIS REPORT\n")
             f.write(f"{'='*50}\n")
-            f.write(f"Meme: {meme_name}\n")
+            f.write(f"Meme: {meme_name.replace('_', ' ').title()}\n")
             f.write(f"Analysis Date: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             
             f.write(f"1. OVERVIEW\n")
@@ -276,29 +281,86 @@ class LifecycleAnalyzer:
         print(f"\nReport saved: {report_path}")
         return report_path
 
-# 실행 코드
-if __name__ == "__main__":
-    import glob
+def find_latest_processed_file(meme_name=None):
+    """가장 최근 전처리된 파일 찾기"""
+    if meme_name:
+        # 특정 밈의 파일 찾기
+        meme_safe_name = meme_name.replace(' ', '_').lower()
+        pattern = f"processed_reddit_{meme_safe_name}_*.csv"
+    else:
+        # 모든 전처리된 파일 찾기
+        pattern = "processed_reddit_*_*.csv"
     
-    # 전처리된 데이터 찾기
-    processed_files = glob.glob(os.path.join(PROCESSED_DATA_DIR, 'processed_reddit_*.csv'))
+    processed_files = glob.glob(os.path.join(PROCESSED_DATA_DIR, pattern))
     
     if processed_files:
-        # 가장 최근 파일 선택
+        # 가장 최근 파일 반환
         latest_file = max(processed_files, key=os.path.getctime)
+        return latest_file
+    else:
+        return None
+
+def extract_meme_name_from_processed_filename(filename):
+    """전처리된 파일명에서 밈 이름 추출"""
+    basename = os.path.basename(filename)
+    # processed_reddit_meme_name_timestamp.csv 형식
+    parts = basename.replace('processed_reddit_', '').replace('.csv', '').split('_')
+    
+    # 타임스탬프 부분 제거 (마지막 2개 요소: YYYYMMDD, HHMMSS)
+    if len(parts) >= 2:
+        # 마지막 2개가 숫자인지 확인 (타임스탬프)
+        if parts[-1].isdigit() and parts[-2].isdigit() and len(parts[-2]) == 8:
+            meme_parts = parts[:-2]
+        else:
+            meme_parts = parts
+    else:
+        meme_parts = parts
+    
+    return '_'.join(meme_parts)
+
+def main():
+    """메인 실행 함수"""
+    parser = argparse.ArgumentParser(description='밈 수명 주기 분석')
+    parser.add_argument('--meme', type=str, help='분석할 밈 이름')
+    parser.add_argument('--file', type=str, help='분석할 특정 파일명')
+    
+    args = parser.parse_args()
+    
+    # 처리할 파일 찾기
+    if args.file:
+        # 특정 파일 지정
+        target_file = os.path.join(PROCESSED_DATA_DIR, args.file)
+        if not os.path.exists(target_file):
+            print(f"파일을 찾을 수 없습니다: {args.file}")
+            return
+        filepath = target_file
+        meme_name = extract_meme_name_from_processed_filename(args.file)
+    else:
+        # 가장 최근 파일 또는 특정 밈의 파일 찾기
+        latest_file = find_latest_processed_file(args.meme)
+        if not latest_file:
+            if args.meme:
+                print(f"'{args.meme}' 밈의 전처리된 데이터 파일을 찾을 수 없습니다.")
+            else:
+                print("전처리된 데이터 파일을 찾을 수 없습니다.")
+            return
         
+        filepath = latest_file
+        meme_name = extract_meme_name_from_processed_filename(os.path.basename(latest_file))
+    
+    print(f"분석할 파일: {os.path.basename(filepath)}")
+    print(f"밈 이름: {meme_name}")
+    
+    try:
         # 데이터 로드
-        df = pd.read_csv(latest_file)
+        df = pd.read_csv(filepath)
         df['created_utc'] = pd.to_datetime(df['created_utc'])
         df['date'] = pd.to_datetime(df['date'])
-        
-        # 밈 이름 추출
-        meme_name = 'chill_guy'
         
         # 분석 실행
         analyzer = LifecycleAnalyzer()
         
-        print(f"=== Analyzing {meme_name} Meme Lifecycle ===")
+        print(f"\n=== {meme_name.replace('_', ' ').title()} 밈 수명 주기 분석 ===")
         
         # 1. 생명주기 단계 식별
         daily_metrics, phases = analyzer.identify_lifecycle_phases(df)
@@ -312,7 +374,14 @@ if __name__ == "__main__":
         # 4. 보고서 생성
         report_path = analyzer.generate_report(meme_name, df, daily_metrics, phases, curve_fit, metrics)
         
-        print("\n=== Analysis Complete ===")
-        print(f"Check the report at: {report_path}")
-    else:
-        print("No processed data found.")
+        print(f"\n✅ '{meme_name}' 밈 분석 완료!")
+        print(f"보고서: {report_path}")
+        
+    except Exception as e:
+        print(f"❌ 분석 중 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+
+# 실행 코드
+if __name__ == "__main__":
+    main()

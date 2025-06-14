@@ -1,0 +1,6 @@
+total_posts: 240
+date_range: 2020-10-26 01:04:13 ~ 2025-05-30 04:46:51
+unique_authors: 86
+unique_subreddits: 19
+avg_score: 1684.5291666666667
+avg_comments: 284.5375

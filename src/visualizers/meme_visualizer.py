@@ -37,7 +37,7 @@ class MemeVisualizer:
         ax1.plot(daily_posts_ma.index, daily_posts_ma.values, linewidth=2, label='7-day Moving Average')
         ax1.set_title(f'{meme_name.replace("_", " ").title()} Meme Life Cycle - {platform.upper()}', fontsize=16, fontweight='bold')
         ax1.set_xlabel('Date')
-        ax1.set_ylabel('Number of Posts')
+        ax1.set_ylabel('number of posts')
         ax1.legend()
         ax1.grid(True, alpha=0.3)
         

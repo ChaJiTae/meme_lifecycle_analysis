@@ -1,5 +1,7 @@
-import os
+import os,platform
 from datetime import datetime
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
 # 프로젝트 루트 경로
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,6 +23,23 @@ TARGET_MEMES = [
     "나니가스키",
     # 추가 밈들...
 ]
+
+def set_global_font():
+    system = platform.system()
+    if system == "Darwin":  # macOS
+        font_path = "/System/Library/Fonts/AppleSDGothicNeo.ttc"
+    elif system == "Windows":
+        font_path = "C:/Windows/Fonts/malgun.ttf"
+    else:
+        font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"  # 예시
+    font_prop = fm.FontProperties(fname=font_path)
+    plt.rcParams['font.family'] = font_prop.get_name()
+    
+    return font_prop.get_name()
+
+# 실제로 한 번 설정 적용,
+DEFAULT_FONT = set_global_font()
+
 
 # 데이터 수집 기간
 START_DATE = datetime(2024, 1, 1)
